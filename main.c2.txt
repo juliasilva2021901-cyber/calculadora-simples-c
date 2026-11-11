@@ -1,0 +1,186 @@
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <errno.h>
+
+#define TAM_LINHA 100
+
+int lerLinha(char linha[], size_t tamanho) {
+    if (fgets(linha, (int)tamanho, stdin) == NULL)
+        return 0;
+
+    linha[strcspn(linha, "\r\n")] = '\0';
+    return 1;
+}
+
+int lerOpcao(int *opcao) {
+    char linha[TAM_LINHA];
+    char *fim;
+    long valor;
+
+    if (!lerLinha(linha, sizeof(linha)))
+        return 0;
+
+    errno = 0;
+    valor = strtol(linha, &fim, 10);
+
+    while (isspace((unsigned char)*fim))
+        fim++;
+
+    if (linha[0] == '\0' || errno != 0 ||
+        *fim != '\0' || valor < 1 || valor > 5)
+        return -1;
+
+    *opcao = (int)valor;
+    return 1;
+}
+
+int lerNumero(const char *mensagem, double *numero) {
+    char linha[TAM_LINHA];
+    char *fim;
+    double valor;
+
+    printf("%s", mensagem);
+
+    if (!lerLinha(linha, sizeof(linha)))
+        return 0;
+
+    errno = 0;
+    valor = strtod(linha, &fim);
+
+    while (isspace((unsigned char)*fim))
+        fim++;
+
+    if (linha[0] == '\0' || errno != 0 || *fim != '\0')
+        return -1;
+
+    *numero = valor;
+    return 1;
+}
+
+int desejaContinuar(void) {
+    char linha[TAM_LINHA];
+    char resposta;
+
+    while (1) {
+        printf("\nDeseja realizar outra operação? (s/n): ");
+
+        if (!lerLinha(linha, sizeof(linha)))
+            return 0;
+
+        resposta = (char)tolower((unsigned char)linha[0]);
+
+        if (linha[1] == '\0' &&
+            (resposta == 's' || resposta == 'n'))
+            return resposta == 's';
+
+        printf("Resposta inválida. Por favor, digite 's' para sim ou 'n' para não.\n");
+    }
+}
+
+int main(void) {
+    int opcao;
+    int estado;
+    double numero1, numero2, resultado;
+    char operador;
+
+    while (1) {
+        printf("\n===============================\n");
+        printf("      Calculadora Simples\n");
+        printf("===============================\n");
+        printf("Selecione uma operação:\n");
+        printf("1. Adição\n");
+        printf("2. Subtração\n");
+        printf("3. Multiplicação\n");
+        printf("4. Divisão\n");
+        printf("5. Sair\n");
+        printf("Opção: ");
+
+        estado = lerOpcao(&opcao);
+
+        if (estado == 0) {
+            printf("\nObrigado por usar a calculadora! Até a próxima.\n");
+            break;
+        }
+
+        if (estado == -1) {
+            printf("Opção inválida! Digite um número inteiro entre 1 e 5.\n");
+            continue;
+        }
+
+        if (opcao == 5) {
+            printf("\nObrigado por usar a calculadora! Até a próxima.\n");
+            break;
+        }
+
+        estado = lerNumero("Digite o primeiro número: ", &numero1);
+
+        if (estado != 1) {
+            printf("Entrada inválida. Digite um número válido.\n");
+            if (!desejaContinuar()) {
+                printf("\nObrigado por usar a calculadora! Até a próxima.\n");
+                break;
+            }
+            continue;
+        }
+
+        estado = lerNumero("Digite o segundo número: ", &numero2);
+
+        if (estado != 1) {
+            printf("Entrada inválida. Digite um número válido.\n");
+            if (!desejaContinuar()) {
+                printf("\nObrigado por usar a calculadora! Até a próxima.\n");
+                break;
+            }
+            continue;
+        }
+
+        switch (opcao) {
+            case 1:
+                operador = '+';
+                resultado = numero1 + numero2;
+                break;
+
+            case 2:
+                operador = '-';
+                resultado = numero1 - numero2;
+                break;
+
+            case 3:
+                operador = '*';
+                resultado = numero1 * numero2;
+                break;
+
+            case 4:
+                operador = '/';
+
+                if (numero2 == 0.0) {
+                    printf("Erro: Divisão por zero não é permitida.\n");
+
+                    if (!desejaContinuar()) {
+                        printf("\nObrigado por usar a calculadora! Até a próxima.\n");
+                        return 0;
+                    }
+                    continue;
+                }
+
+                resultado = numero1 / numero2;
+                break;
+
+            default:
+                continue;
+        }
+
+        printf("Resultado: %.10g %c %.10g = %.10g\n",
+               numero1, operador, numero2, resultado);
+
+        if (!desejaContinuar()) {
+            printf("\nObrigado por usar a calculadora! Até a próxima.\n");
+            break;
+        }
+    }
+
+    return 0;
+}
